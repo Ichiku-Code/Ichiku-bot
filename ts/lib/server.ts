@@ -4,6 +4,8 @@ import { WebSocketServer } from 'ws';
 import type { APIs } from './apis.js';
 import type { SelectEventType } from './events.js';
 import type { Event } from './events.js';
+import type { SnakeToCamel } from './mangle.js';
+import { camelToSnake } from './mangle.js';
 
 type HandlerReturnType = boolean | undefined | Promise<boolean | undefined>;
 
@@ -35,11 +37,12 @@ export class Server {
         return promise;
     }
 
-    get api(): { [Action in keyof APIs]: (params: APIs[Action][0]) => Promise<APIs[Action][1]> } {
+    get api(): { [Action in keyof APIs as SnakeToCamel<Action>]:
+        (params: APIs[Action][0]) => Promise<APIs[Action][1]> } {
         return new Proxy({}, {
             get: (_, action, __) => (params: any) => {
                 const { promise, resolve, reject } = Promise.withResolvers<any>();
-                this.socket.send(JSON.stringify({ action, params }));
+                this.socket.send(JSON.stringify({ action: camelToSnake(action.toString()), params }));
                 this.callbacks.push({ resolve, reject });
                 return promise;
             }

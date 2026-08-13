@@ -89,7 +89,7 @@ register(
         duration: z.int().min(0).max(15).describe('禁言时长（单位为分钟，范围为0~15）')
     }),
     async ({ user_id, duration }, session) => {
-        await session.server.api.set_group_ban({ group_id: session.group, user_id, duration: duration * 60 });
+        await session.server.api.setGroupBan({ group_id: session.group, user_id, duration: duration * 60 });
         return 'succeed';
     }
 );
@@ -99,7 +99,7 @@ register(
     '戳一戳指定用户。适合偶尔用于友情提示/催促，或与关系较好的群友进行趣味互动。',
     z.object({ user_id: z.int().describe('要戳一戳的用户id') }),
     async ({ user_id }, session) => {
-        await session.server.api.group_poke({ group_id: session.group, user_id });
+        await session.server.api.groupPoke({ group_id: session.group, user_id });
         return 'succeed';
     }
 );
@@ -109,7 +109,7 @@ register(
     '获取全部群成员的信息列表。',
     z.object(),
     async (_, session) => {
-        const list = await session.server.api.get_group_member_list({ group_id: session.group });
+        const list = await session.server.api.getGroupMemberList({ group_id: session.group });
         return list.map(user => ({
             user_id: user.user_id,
             user_name: user.card || user.nickname,

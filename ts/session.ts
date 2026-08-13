@@ -22,7 +22,7 @@ export class Session {
     }
 
     async usernameOf(id: number) {
-        const user = await this.server.api.get_group_member_info({ group_id: this.group, user_id: id });
+        const user = await this.server.api.getGroupMemberInfo({ group_id: this.group, user_id: id });
         return user.card || user.nickname;
     }
 
@@ -61,7 +61,7 @@ export class Session {
                 case 'reply': {
                     yield { type: 'text', text: '<reply>' };
                     try {
-                        const reply = await this.server.api.get_msg({ message_id: Number(data.id) });
+                        const reply = await this.server.api.getMsg({ message_id: Number(data.id) });
                         const time = Temporal.Instant.fromEpochMilliseconds(1000 * reply.time);
                         yield* this.formatContent(reply.sender.user_id, time, reply.message);
                     } catch (_) {
@@ -72,7 +72,7 @@ export class Session {
                 }
                 case 'forward': {
                     yield { type: 'text', text: '<forward>' };
-                    const forward = await this.server.api.get_forward_msg({ id: data.id });
+                    const forward = await this.server.api.getForwardMsg({ id: data.id });
                     for (const event of forward.messages) {
                         const time = Temporal.Instant.fromEpochMilliseconds(1000 * event.time);
                         const sender = [event.sender.user_id, event.sender.nickname] as const;
@@ -121,7 +121,7 @@ export class Session {
                 if (lines.length > 5) throw new Error('Too many lines');
                 for (const line of lines) {
                     const message = unescape(line.replace(/\[at:(\d+|all)]/g, '[CQ:at,qq=$1]').trim());
-                    if (message.length) await this.server.api.send_group_msg({ group_id: this.group, message });
+                    if (message.length) await this.server.api.sendGroupMsg({ group_id: this.group, message });
                 }
                 const end = performance.now();
                 await logging.notify(`回复完成！花费了${Math.floor((end - start) / 1000)}s喵~`);
