@@ -2,7 +2,7 @@
   "type": "module",
   "dependencies": {
     "@tavily/core": "^0.7.7",
-    "dotenv": "^17.4.2",
+    "camelcase-keys": "^10.0.2",
     "expr-eval": "^2.0.2",
     "openai": "^7.4.0",
     "ws": "^8.21.3",

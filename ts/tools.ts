@@ -4,6 +4,7 @@ import { zodFunction } from 'openai/helpers/zod';
 import type { output, ZodType } from 'zod';
 import { z } from 'zod';
 
+import { env } from './env.js';
 import * as logging from './logging.js';
 import type { Session } from './session.js';
 
@@ -46,6 +47,8 @@ register(
     () => 42
 );
 
+const tvly = tavily({ apiKey: env.tavilyApiKey });
+
 register(
     'web_search',
     raw`网络搜索。
@@ -56,7 +59,7 @@ register(
     - 语言适配：若用户询问技术/专有名词，优先生成英文关键词或中英混合关键词。
     - 时间具体化：将相对时间改为绝对时间点（如“最近”“近期”改为“2026.8”）。`,
     z.object({ query: z.string().describe('搜索关键词') }),
-    async ({ query }) => await tavily().search(query, { searchDepth: 'ultra-fast' })
+    async ({ query }) => await tvly.search(query, { searchDepth: 'ultra-fast' })
 );
 
 const parser = new Parser({ allowMemberAccess: false });

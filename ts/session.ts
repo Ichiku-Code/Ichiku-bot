@@ -1,5 +1,6 @@
 import type { ChatCompletionContentPart } from 'openai/resources';
 
+import { env } from './env.js';
 import type { GroupMessageEvent } from './lib/events.js';
 import { type Message, unescape } from './lib/message.js';
 import type { Server } from './lib/server.js';
@@ -107,7 +108,7 @@ export class Session {
         memory.add({ role: 'user', content: await Array.fromAsync(this.content) });
         for (let i = 0; i < 5; i++) {
             const response = await request({
-                model: process.env.CHAT_MODEL,
+                model: env.chatModel,
                 messages: memory.all,
                 tools: tools.all()
             }, { timeout: 180000 });

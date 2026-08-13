@@ -2,9 +2,13 @@ import { promises } from 'fs';
 import OpenAI, { APIError, RateLimitError } from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionMessageParam } from 'openai/resources';
 
+import { env } from './env.js';
 import * as logging from './logging.js';
 
-export const openai = new OpenAI();
+export const openai = new OpenAI({
+    apiKey: env.openaiApiKey,
+    baseURL: env.openaiBaseUrl
+});
 
 export async function request(
     body: ChatCompletionCreateParamsNonStreaming,
@@ -24,7 +28,7 @@ export async function request(
     }
 }
 
-const threshold = Number(process.env.THRESHOLD);
+const threshold = Number(env.threshold);
 
 export class Memory {
     private constructor(private memory: string, private compressed: string,
@@ -82,7 +86,7 @@ export class Memory {
         ].join('\n');
 
         const response = await request({
-            model: process.env.COMPRESS_MODEL,
+            model: env.compressModel,
             messages: [
                 { role: 'system', content: prompt },
                 { role: 'user', content: `原有摘要：${this.compressed}` },
