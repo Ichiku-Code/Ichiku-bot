@@ -1,7 +1,11 @@
+# dev
 /.vscode
 /js
-/NapCat
 /node_modules
-/.env
+/ruff.toml
+
+# extra deps
+/NapCat
+/env.toml
 /memory.json
 /system.txt

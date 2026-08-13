@@ -1,5 +1,3 @@
-import 'dotenv/config';
-
 import { env } from './env.js';
 import { Server } from './lib/server.js';
 import * as logging from './logging.js';
@@ -26,7 +24,7 @@ const server = await Server.of(Number(env.port));
 logging.setLogger(
     // eslint-disable-next-line no-console
     message => console.log(`[Ichiku] ${message}`),
-    async message => void await server.api.send_group_msg({ group_id: Number(env.noticeGroup), message })
+    async message => void await server.api.send_group_msg({ group_id: Number(env.qq.notice), message })
 );
 
 await logging.notify('Ichiku启动喵~');

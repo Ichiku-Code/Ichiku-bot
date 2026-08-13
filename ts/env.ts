@@ -1,18 +1,25 @@
-import camelcaseKeys from "camelcase-keys";
-import z from "zod";
+import { promises } from 'fs';
+import { parse } from 'smol-toml';
 
-process.loadEnvFile();
+interface Env {
+    port: number;
+    qq: {
+        id: number;
+        notice: number;
+    };
+    model: {
+        chat: string;
+        compress: string;
+        threshold: number;
+    };
+    openai: {
+        key: string;
+        url?: string;
+    };
+    tavily: {
+        key: string;
+        url?: string;
+    };
+}
 
-const schema = z.object({
-    PORT: z.coerce.number().int(),
-    NOTICE_GROUP: z.coerce.number().int(),
-    CHAT_MODEL: z.string(),
-    COMPRESS_MODEL: z.string(),
-    THRESHOLD: z.coerce.number().int(),
-
-    OPENAI_API_KEY: z.string(),
-    OPENAI_BASE_URL: z.string().optional(),
-    TAVILY_API_KEY: z.string()
-}).transform(data => camelcaseKeys(data));
-
-export const env = schema.parse(process.env);
+export const env = parse(await promises.readFile('env.toml', 'utf-8')) as unknown as Env;

@@ -108,7 +108,7 @@ export class Session {
         memory.add({ role: 'user', content: await Array.fromAsync(this.content) });
         for (let i = 0; i < 5; i++) {
             const response = await request({
-                model: env.chatModel,
+                model: env.model.chat,
                 messages: memory.all,
                 tools: tools.all()
             }, { timeout: 180000 });
@@ -124,7 +124,7 @@ export class Session {
                     if (message.length) await this.server.api.send_group_msg({ group_id: this.group, message });
                 }
                 const end = performance.now();
-                await logging.notify(`回复完成！花费了${Math.floor((end - start) * 1000)}s喵~`);
+                await logging.notify(`回复完成！花费了${Math.floor((end - start) / 1000)}s喵~`);
                 await memory.compress();
                 await memory.save();
                 return;

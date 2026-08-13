@@ -47,7 +47,7 @@ register(
     () => 42
 );
 
-const tvly = tavily({ apiKey: env.tavilyApiKey });
+const tvly = tavily({ apiKey: env.tavily.key, apiBaseURL: env.tavily.url });
 
 register(
     'web_search',

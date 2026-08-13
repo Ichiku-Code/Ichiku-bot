@@ -6,8 +6,8 @@ import { env } from './env.js';
 import * as logging from './logging.js';
 
 export const openai = new OpenAI({
-    apiKey: env.openaiApiKey,
-    baseURL: env.openaiBaseUrl
+    apiKey: env.openai.key,
+    baseURL: env.openai.url
 });
 
 export async function request(
@@ -28,7 +28,7 @@ export async function request(
     }
 }
 
-const threshold = Number(env.threshold);
+const threshold = Number(env.model.threshold);
 
 export class Memory {
     private constructor(private memory: string, private compressed: string,
@@ -86,7 +86,7 @@ export class Memory {
         ].join('\n');
 
         const response = await request({
-            model: env.compressModel,
+            model: env.model.compress,
             messages: [
                 { role: 'system', content: prompt },
                 { role: 'user', content: `原有摘要：${this.compressed}` },
@@ -100,6 +100,6 @@ export class Memory {
         this.recent = this.recent.slice(size);
         this.compressed = content;
         const end = performance.now();
-        await logging.notify(`上下文压缩完成！花费了${Math.floor((end - start) * 1000)}s喵~`);
+        await logging.notify(`上下文压缩完成！花费了${Math.floor((end - start) / 1000)}s喵~`);
     }
 }

@@ -3,13 +3,18 @@ import signal
 import subprocess
 import time
 
+import tomllib
+
+with open('env.toml', 'rb') as f:
+    env = tomllib.load(f)
+    port = env['port']
+    qq = env['qq']['id']
+
 try:
-    output = subprocess.check_output("netstat -ano | findstr :8080", shell=True).decode(
-        "gbk", errors="ignore"
-    )
-    pids = {line.split()[-1] for line in output.strip().splitlines() if "LISTENING" in line}
+    output = subprocess.check_output(f'netstat -ano | findstr :{port}', shell=True).decode('gbk', errors='ignore')
+    pids = {line.split()[-1] for line in output.strip().splitlines() if 'LISTENING' in line}
     for pid in pids:
-        subprocess.run(f"taskkill /F /PID {pid}", shell=True, check=True)
+        subprocess.run(f'taskkill /F /PID {pid}', shell=True, check=True)
 except Exception:  # noqa: BLE001, S110
     pass
 
@@ -24,8 +29,8 @@ processes = [
         stdin=subprocess.DEVNULL,
     )
     for args, cwd in (
-        (["npm.cmd", "run", "start"], cwd),
-        (["cmd.exe", "/c", "launcher-user.bat", "3921133911"], cwd / "NapCat"),
+        (['npm.cmd', 'run', 'start'], cwd),
+        (['cmd.exe', '/c', 'launcher-user.bat', str(qq)], cwd / 'NapCat'),
     )
 ]
 

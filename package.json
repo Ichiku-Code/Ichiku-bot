@@ -2,9 +2,9 @@
   "type": "module",
   "dependencies": {
     "@tavily/core": "^0.7.7",
-    "camelcase-keys": "^10.0.2",
     "expr-eval": "^2.0.2",
     "openai": "^7.4.0",
+    "smol-toml": "^1.8.0",
     "ws": "^8.21.3",
     "zod": "^4.4.3"
   },
