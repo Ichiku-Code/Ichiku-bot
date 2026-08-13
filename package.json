@@ -1,0 +1,25 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@tavily/core": "^0.7.7",
+    "dotenv": "^17.4.2",
+    "expr-eval": "^2.0.2",
+    "openai": "^7.4.0",
+    "ws": "^8.21.3",
+    "zod": "^4.4.3"
+  },
+  "scripts": {
+    "start": "tsc && node --harmony-temporal ./js/main.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@eslint/json": "^0.14.0",
+    "@types/node": "^25.0.3",
+    "@types/ws": "^8.18.1",
+    "eslint": "^9.39.2",
+    "eslint-plugin-no-floating-promise": "^2.0.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "typescript": "^6.0.0",
+    "typescript-eslint": "^8.51.0"
+  }
+}

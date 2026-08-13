@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["esnext"],
+
+    "module": "node16",
+    "moduleResolution": "node16",
+    "moduleDetection": "force",
+
+    "strict": true,
+    "noImplicitOverride": true,
+    "useUnknownInCatchVariables": true,
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    
+    "rootDir": "./ts",
+    "outDir": "./js"
+  },
+  "include": [
+    "./ts/**/*"
+  ]
+}
