@@ -94,9 +94,8 @@ export class Memory {
             ],
             temperature: 0.3
         }, { timeout: 120000 });
-        const content = response.choices[0].message.content;
-        if (content === null || content.length > 800)
-            throw new Error('Invalid compression result!');
+        const content = response.choices[0]?.message.content;
+        if (!content || content.length > 800) throw new Error('Invalid compression result');
         this.recent = this.recent.slice(size);
         this.compressed = content;
         const end = performance.now();

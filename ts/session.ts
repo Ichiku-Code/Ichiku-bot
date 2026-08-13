@@ -58,7 +58,9 @@ export class Session {
                 messages: memory.all,
                 tools: tools.all()
             }, { timeout: 180000 });
-            const { tool_calls, content } = response.choices[0].message;
+            const message = response.choices[0]?.message;
+            if (message === undefined) throw new Error('Reply is empty');
+            const { tool_calls, content } = message;
             memory.add({ role: 'assistant', content, tool_calls });
             if (tool_calls === undefined || tool_calls.length === 0) {
                 memory.simplify();
