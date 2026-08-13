@@ -1,8 +1,7 @@
-import type { ChatCompletionContentPart } from 'openai/resources';
-
 import { env } from './env.js';
+import { Formatter } from './formatter.js';
 import type { GroupMessageEvent } from './lib/events.js';
-import { type Message, unescape } from './lib/message.js';
+import { unescape } from './lib/message.js';
 import type { Server } from './lib/server.js';
 import * as logging from './logging.js';
 import { Memory, request } from './model.js';
@@ -26,73 +25,20 @@ export class Session {
         return user.card || user.nickname;
     }
 
-    async* formatContent(user: number | readonly [number | undefined, string | undefined] | undefined,
-        time: Temporal.Instant, message: Message['In']): AsyncGenerator<ChatCompletionContentPart> {
-        const [userId, userName] = user === undefined ? ['Unknown', 'unknown']
-            : typeof user === 'number' ? [user, await this.usernameOf(user)] : user;
-        const metadata = `[Metadata] user_name=${userName} user_id=${userId} time=${time.toLocaleString()} `;
-        yield { type: 'text', text: metadata };
-        let texts = '';
-        if (typeof message === 'string') {
-            yield { type: 'text', text: message };
-            return message;
-        }
-        for (const { type, data } of message) {
-            switch (type) {
-                case 'at': {
-                    const id = data.qq;
-                    if (id === 'all') texts += '[at:all]';
-                    else texts += `[at:${id}(${await this.usernameOf(Number(id))})]`;
-                    break;
+    async* content() {
+        const formatter = new Formatter(this);
+        let text = '';
+        for await (const item of formatter.content(this.user, Temporal.Now.instant(), this.event.message)) {
+            if (typeof item === 'string') text += item;
+            else {
+                if (text) {
+                    yield { type: 'text', text } as const;
+                    text = '';
                 }
-                case 'image': {
-                    if (texts) {
-                        yield { type: 'text', text: texts };
-                        texts = '';
-                    }
-                    const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' };
-                    const response = await fetch(data.url, { headers });
-                    const b64 = Buffer.from(await response.arrayBuffer()).toString('base64');
-                    if (!b64 || response.headers.get('content-type') !== 'image/webp')
-                        throw new Error(`Failed to download image ${data.url}`);
-                    yield { type: 'image_url', image_url: { url: `data:image/webp;base64,${b64}` } };
-                    break;
-                }
-                case 'reply': {
-                    yield { type: 'text', text: '<reply>' };
-                    try {
-                        const reply = await this.server.api.getMsg({ message_id: Number(data.id) });
-                        const time = Temporal.Instant.fromEpochMilliseconds(1000 * reply.time);
-                        yield* this.formatContent(reply.sender.user_id, time, reply.message);
-                    } catch (_) {
-                        yield { type: 'text', text: '[unknown message]' };
-                    }
-                    yield { type: 'text', text: '</reply>' };
-                    break;
-                }
-                case 'forward': {
-                    yield { type: 'text', text: '<forward>' };
-                    const forward = await this.server.api.getForwardMsg({ id: data.id });
-                    for (const event of forward.messages) {
-                        const time = Temporal.Instant.fromEpochMilliseconds(1000 * event.time);
-                        const sender = [event.sender.user_id, event.sender.nickname] as const;
-                        yield* this.formatContent(sender, time, event.message);
-                    }
-                    yield { type: 'text', text: '</forward>' };
-                    break;
-                }
-                case 'text': {
-                    texts += data.text;
-                    break;
-                }
-                default: texts += `[Unknown message segment: ${type}]`;
+                yield item;
             }
         }
-        if (texts) yield { type: 'text', text: texts };
-    }
-
-    get content() {
-        return this.formatContent(this.user, Temporal.Now.instant(), this.event.message);
+        if (text) yield { type: 'text', text } as const;
     }
 
     get isToMe() {
@@ -105,7 +51,7 @@ export class Session {
         if (!this.isToMe) return;
         await logging.notify(`正在回复${await this.usernameOf(this.user)}的信息~`);
         const start = performance.now();
-        memory.add({ role: 'user', content: await Array.fromAsync(this.content) });
+        memory.add({ role: 'user', content: await Array.fromAsync(this.content()) });
         for (let i = 0; i < 5; i++) {
             const response = await request({
                 model: env.model.chat,
