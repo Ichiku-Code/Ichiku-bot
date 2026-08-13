@@ -1,17 +1,15 @@
 type Logger = (message: string) => void | Promise<void>;
 
-let debug_logger: Logger;
-let notify_logger: Logger;
+let loggers: { debug: Logger, notify: Logger };
 
 export function setLogger(debug: Logger, notify: Logger) {
-    debug_logger = debug;
-    notify_logger = notify;
+    loggers = { debug, notify };
 }
 
 export async function debug(message: string) {
-    await debug_logger(message);
+    await loggers.debug(message);
 }
 
 export async function notify(message: string) {
-    await notify_logger(message);
+    await loggers.notify(message);
 }

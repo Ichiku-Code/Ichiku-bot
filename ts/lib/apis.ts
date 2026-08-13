@@ -60,7 +60,7 @@ export interface APIs {
     get_forward_msg: [{
         id: string;
     }, {
-        messages: (GroupMessageEvent | PrivateMessageEvent)[];
+        messages: (PrivateMessageEvent | GroupMessageEvent)[];
     }];
 
     send_like: [{

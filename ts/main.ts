@@ -3,22 +3,6 @@ import { Server } from './lib/server.js';
 import * as logging from './logging.js';
 import { Session } from './session.js';
 
-declare global {
-    namespace NodeJS {
-        interface ProcessEnv {
-            PORT: string;
-            NOTICE_GROUP: string;
-            CHAT_MODEL: string;
-            COMPRESS_MODEL: string;
-            THRESHOLD: string;
-
-            OPENAI_API_KEY: string;
-            OPENAI_BASE_URL?: string;
-            TAVILY_API_KEY: string;
-        }
-    }
-}
-
 const server = await Server.of(Number(env.port));
 
 logging.setLogger(
