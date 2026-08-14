@@ -1,8 +1,10 @@
 import { promises } from 'fs';
 import { parse } from 'smol-toml';
 
+import type { ServerConfig } from './lib/server.js';
+
 interface Env {
-    port: number;
+    onebot: ServerConfig;
     qq: {
         id: number;
         notice: number;

@@ -3,17 +3,17 @@ import { Server } from './lib/server.js';
 import * as logging from './logging.js';
 import { Session } from './session.js';
 
-const server = await Server.of(Number(env.port));
+const server = await Server.of(env.onebot);
 
 logging.setLogger(
     // eslint-disable-next-line no-console
     message => console.log(`[Ichiku] ${message}`),
-    async message => void await server.api.sendGroupMsg({ group_id: Number(env.qq.notice), message })
+    async message => void await server.api.sendGroupMsg({ group_id: env.qq.notice, message })
 );
 
 await logging.notify('Ichiku启动喵~');
 
-server.onclose(async () => await logging.notify('Ichiku关机喵~'));
+server.onClose(async () => await logging.notify('Ichiku关机喵~'));
 
 server.handles('message/group', async event => {
     const session = new Session(event, server);

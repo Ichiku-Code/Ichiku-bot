@@ -1,7 +1,7 @@
-import type { ChatCompletionContentPart } from "openai/resources";
+import type { ChatCompletionContentPart } from 'openai/resources';
 
-import type { Message, MessageSegment } from "./lib/message.js";
-import type { Session } from "./session.js";
+import type { Message, MessageSegment } from './lib/message.js';
+import type { Session } from './session.js';
 
 type UserData = number | readonly [id: number | undefined, name: string | undefined] | undefined;
 

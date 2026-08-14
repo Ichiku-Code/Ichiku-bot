@@ -7,7 +7,7 @@ import tomllib
 
 with open('env.toml', 'rb') as f:
     env = tomllib.load(f)
-    port = env['port']
+    port = env['onebot']['port']
     qq = env['qq']['id']
 
 try:

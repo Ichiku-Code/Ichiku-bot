@@ -1,15 +1,12 @@
-import type { WebSocket } from 'ws';
-import { WebSocketServer } from 'ws';
-
 import type { APIs } from './apis.js';
 import type { SelectEventType } from './events.js';
-import type { Event } from './events.js';
 import type { SnakeToCamel } from './mangle.js';
 import { camelToSnake } from './mangle.js';
 
-type HandlerReturnType = boolean | undefined | Promise<boolean | undefined>;
+export type HandlerReturnType = boolean | undefined | Promise<boolean | undefined>;
 
-const close = Symbol('close');
+// Should only be used in server impls.
+export const close = Symbol('close');
 const servers: Server[] = [];
 
 const dispose = async () => {
@@ -20,69 +17,62 @@ process.on('SIGINT', dispose);
 process.on('SIGTERM', dispose);
 process.on('SIGBREAK', dispose);
 
-export class Server {
-    private callbacks: { resolve: (result: any) => void, reject: (reason?: any) => void }[] = [];
-    private handlers: { type: string, handler: (event: any) => HandlerReturnType }[] = [];
+export type ServerConfig = {
+    mode: 'ws';
+    host: string;
+    port: number;
+    token: string;
+} | {
+    mode: 'ws-reverse';
+    host: string;
+    port: number;
+};
+
+export type ServerConfigOf<Mode extends ServerConfig['mode']> = ServerConfig & { mode: Mode };
+
+export abstract class Server {
     private dispose: (() => void | Promise<void>) | undefined;
+    private handlers: { type: string, handler: (event: any) => HandlerReturnType }[] = [];
 
-    private constructor(private server: WebSocketServer, private socket: WebSocket) {
-        socket.on('message', async data => await this.handle(JSON.parse(data.toString())));
-        servers.push(this);
+    static async of(config: ServerConfig): Promise<Server> {
+        const { Server } = await import(`./server/${config.mode}.js`);
+        const server = await Server.new(config);
+        servers.push(server);
+        return server;
     }
 
-    static of(port: number) {
-        const { promise, resolve } = Promise.withResolvers<Server>();
-        const server = new WebSocketServer({ port });
-        server.on('connection', socket => resolve(new Server(server, socket)));
-        return promise;
-    }
+    protected abstract call<Action extends keyof APIs>(action: Action,
+        params: APIs[Action][0]): Promise<APIs[Action][1]>;
 
     get api(): { [Action in keyof APIs as SnakeToCamel<Action>]:
         (params: APIs[Action][0]) => Promise<APIs[Action][1]> } {
         return new Proxy({}, {
-            get: (_, action, __) => (params: any) => {
-                const { promise, resolve, reject } = Promise.withResolvers<any>();
-                this.socket.send(JSON.stringify({ action: camelToSnake(action.toString()), params }));
-                this.callbacks.push({ resolve, reject });
-                return promise;
-            }
+            get: (_, action, __) => (params: any) => this.call(camelToSnake(action.toString()) as any, params)
         }) as any;
+    }
+
+    protected async handleEvent(event: Event) {
+        for (const { type, handler } of this.handlers)
+            if (Server.match(event, type) && !await handler(event))
+                break;
+    }
+
+    private static match(data: any, type: string) {
+        if (!type.includes('/')) return data.post_type === type;
+        const [post, sub] = type.split('/');
+        return data.post_type === post && data[`${post}_type`] === sub;
     }
 
     handles<Type extends string>(type: Type, handler: (event: SelectEventType<Type>) => HandlerReturnType) {
         this.handlers.push({ type, handler });
     }
 
-    private isEvent(data: any): data is Event {
-        return 'post_type' in data;
-    }
-
-    private match(data: any, type: string) {
-        if (!type.includes('/')) return data.post_type === type;
-        const [post, sub] = type.split('/');
-        return data.post_type === post && data[`${post}_type`] === sub;
-    }
-
-    private async handle(data: any) {
-        if (this.isEvent(data)) {
-            for (const { type, handler } of this.handlers)
-                if (this.match(data, type) && !await handler(data)) break;
-            return;
-        }
-        const callback = this.callbacks.shift();
-        if (data.status === 'ok') callback?.resolve(data.data);
-        else callback?.reject(new Error(data.message));
-    }
-
-    onclose(callback: () => void | Promise<void>) {
+    onClose(callback: () => void | Promise<void>) {
         if (this.dispose !== undefined) throw new Error('On-close hook already exists');
         this.dispose = callback;
     }
 
-    // Should not be manually called.
     async [close]() {
         await this.dispose?.();
-        this.server.clients.forEach(client => client.close(1001));
-        await new Promise<void>((resolve, reject) => this.server.close(e => e === undefined ? resolve() : reject(e)));
     }
 }
