@@ -4,6 +4,7 @@ import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionMessageParam
 
 import { env } from './env.js';
 import * as logging from './logging.js';
+import { Mutex } from './mutex.js';
 
 export const openai = new OpenAI({
     apiKey: env.openai.key,
@@ -31,8 +32,12 @@ export async function request(
 const threshold = Number(env.model.threshold);
 
 export class Memory {
+    mutex: Mutex;
+
     private constructor(private memory: string, private compressed: string,
-        private recent: ChatCompletionMessageParam[], private system: string) { }
+        private recent: ChatCompletionMessageParam[], private system: string) {
+        this.mutex = new Mutex();
+    }
 
     static async from(memory: string, system: string) {
         const data = await promises.readFile(memory, 'utf-8');
@@ -55,7 +60,7 @@ export class Memory {
     get all(): ChatCompletionMessageParam[] {
         return [
             { role: 'system', content: this.system },
-            { role: 'system', content: `【此前对话的背景摘要】：${this.compressed}` },
+            { role: 'user', content: `【此前对话的背景摘要】：${this.compressed}` },
             ...this.recent
         ];
     }
@@ -66,6 +71,9 @@ export class Memory {
     }
 
     async compress() {
+        // This function must be locked, otherwise 2 tasks might decrease memory twice
+        using _ = await this.mutex.acquire();
+
         const length = this.recent.length;
         if (length <= threshold)
             return await logging.notify(`上下文已使用${(length / threshold * 100).toFixed(2)}%~`);

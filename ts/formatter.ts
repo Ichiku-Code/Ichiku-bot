@@ -106,11 +106,15 @@ export class Formatter {
 
     async* forward(data: Data<'forward'>): Contents {
         yield { type: 'text', text: '<forward>' };
-        const forward = await this.session.server.api.getForwardMsg({ id: data.id });
-        for (const event of forward.messages) {
-            const time = Temporal.Instant.fromEpochMilliseconds(1000 * event.time);
-            const sender = [event.sender.user_id, event.sender.nickname] as const;
-            yield* this.content(sender, time, event.message);
+        try {
+            const events = data.content ?? (await this.session.server.api.getForwardMsg({ id: data.id })).messages;
+            for (const event of events) {
+                const time = Temporal.Instant.fromEpochMilliseconds(1000 * event.time);
+                const sender = [event.sender.user_id, event.sender.nickname] as const;
+                yield* this.content(sender, time, event.message);
+            }
+        } catch (_) {
+            yield '[unknown message]';
         }
         yield { type: 'text', text: '</forward>' };
     }

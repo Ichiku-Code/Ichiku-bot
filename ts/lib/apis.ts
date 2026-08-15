@@ -1,6 +1,4 @@
-import type {
-    Anonymous, GroupMessageEvent, GroupMessageSender, PrivateMessageEvent, PrivateMessageSender
-} from './events.js';
+import type { Anonymous, MessageEvent, MessageSender } from './events.js';
 import type { Message } from './message.js';
 
 export interface GroupHonorUser {
@@ -53,14 +51,14 @@ export interface APIs {
         message_type: string;
         message_id: number;
         real_id: number;
-        sender: PrivateMessageSender | GroupMessageSender;
+        sender: MessageSender;
         message: Message['In'];
     }];
 
     get_forward_msg: [{
         id: string;
     }, {
-        messages: (PrivateMessageEvent | GroupMessageEvent)[];
+        messages: MessageEvent[];
     }];
 
     send_like: [{

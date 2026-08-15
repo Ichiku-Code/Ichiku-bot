@@ -87,7 +87,7 @@ export class Session {
                     content: JSON.stringify(result)
                 });
             }
-            throw new Error('Too many tool calls');
         }
+        throw new Error('Too many tool calls');
     }
 }

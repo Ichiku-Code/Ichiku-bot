@@ -14,6 +14,8 @@ export type SelectEventType<Type extends string> = Type extends `${infer T}/${in
 
 export type MessageEvent = PrivateMessageEvent | GroupMessageEvent;
 
+export type MessageSender = PrivateMessageSender | GroupMessageSender;
+
 export interface PrivateMessageEvent {
     time: number;
     self_id: number;
