@@ -2,7 +2,6 @@
   "type": "module",
   "dependencies": {
     "@tavily/core": "^0.7.7",
-    "async-mutex": "^0.5.0",
     "expr-eval": "^2.0.2",
     "openai": "^7.4.0",
     "smol-toml": "^1.8.0",

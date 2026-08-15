@@ -1,17 +1,26 @@
-import * as mutex from 'async-mutex';
+const unlock = Symbol('unlock');
 
 export class Mutex {
-    inner = new mutex.Mutex();
+    private locked = false;
+    private queue: (() => void)[] = [];
 
     async acquire() {
-        return new MutexGuard(await this.inner.acquire());
+        if (!this.locked) this.locked = true;
+        else await new Promise<void>(resolve => this.queue.push(resolve));
+        return new MutexGuard(this);
+    }
+
+    [unlock]() {
+        const resolve = this.queue.shift();
+        this.locked = resolve !== undefined;
+        resolve?.();
     }
 }
 
 class MutexGuard {
-    constructor(private release: mutex.MutexInterface.Releaser) { }
+    constructor(private mutex: Mutex) { }
 
     [Symbol.dispose]() {
-        this.release();
+        this.mutex[unlock]();
     }
 }
