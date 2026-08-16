@@ -1,6 +1,7 @@
 import type { ChatCompletionContentPart } from 'openai/resources';
 
 import type { Message, MessageSegment } from './lib/message.js';
+import type { ForwardMessageSegmentData } from './napcat.js';
 import type { Session } from './session.js';
 
 type UserData = number | readonly [id: number | undefined, name: string | undefined] | undefined;
@@ -104,11 +105,12 @@ export class Formatter {
         yield { type: 'text', text: '</reply>' };
     }
 
-    async* forward(data: Data<'forward'>): Contents {
+    async* forward(raw: Data<'forward'>): Contents {
+        const data = raw as ForwardMessageSegmentData;
         yield { type: 'text', text: '<forward>' };
         try {
-            const events = data.content ?? (await this.session.server.api.getForwardMsg({ id: data.id })).messages;
-            for (const event of events) {
+            const forward = data.content ?? (await this.session.server.api.getForwardMsg({ id: data.id })).messages;
+            for (const event of forward) {
                 const time = Temporal.Instant.fromEpochMilliseconds(1000 * event.time);
                 const sender = [event.sender.user_id, event.sender.nickname] as const;
                 yield* this.content(sender, time, event.message);

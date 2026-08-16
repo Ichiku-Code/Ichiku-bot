@@ -1,17 +1,20 @@
-import './lib/apis.js';
+import type { MessageEvent } from './lib/events.js';
+import type { ForwardMessageSegment } from './lib/message.js';
 
 // Napcat extensions.
 
 declare module './lib/apis.js' {
     export interface APIs {
-        group_poke: [{
+        group_poke(params: {
             group_id: number;
             user_id: number;
-        }, null];
+        }): void;
 
-        friend_poke: [{
+        friend_poke(params: {
             user_id: number;
             target_id?: number;
-        }, null];
+        }): void;
     }
 }
+
+export type ForwardMessageSegmentData = ForwardMessageSegment['In']['data'] & { content?: MessageEvent[] };

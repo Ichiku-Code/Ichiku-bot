@@ -1,5 +1,3 @@
-import type { MessageEvent } from './events.js';
-
 export function unescape(message: string): MessageSegment['Out'][] {
     const cq = (text: string) => text
         .replace(/&#44;/g, ',')
@@ -296,8 +294,6 @@ export interface ForwardMessageSegment {
         type: 'forward';
         data: {
             id: string;
-            /** TODO: Need to confirm its source; might be an extension. */
-            content?: MessageEvent[];
         };
     };
     Out: {

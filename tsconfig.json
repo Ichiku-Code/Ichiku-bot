@@ -1,20 +1,21 @@
 {
   "compilerOptions": {
     "target": "esnext",
-    "lib": ["esnext"],
 
     "module": "node16",
-    "moduleResolution": "node16",
     "moduleDetection": "force",
+    "moduleResolution": "node16",
 
-    "strict": true,
+    "noImplicitReturns": true,
     "noImplicitOverride": true,
-    "useUnknownInCatchVariables": true,
     "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": true,
+    "noPropertyAccessFromIndexSignature": true,
 
+    "skipLibCheck": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
     
     "rootDir": "./ts",
     "outDir": "./js"

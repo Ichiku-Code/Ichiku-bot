@@ -1,5 +1,5 @@
 import type { APIs } from './apis.js';
-import type { SelectEventType } from './events.js';
+import type { Event, SelectEventType } from './events.js';
 import type { SnakeToCamel } from './mangle.js';
 import { camelToSnake } from './mangle.js';
 
@@ -42,10 +42,9 @@ export abstract class Server {
     }
 
     protected abstract call<Action extends keyof APIs>(action: Action,
-        params: APIs[Action][0]): Promise<APIs[Action][1]>;
+        params: Parameters<APIs[Action]>[0]): Promise<ReturnType<APIs[Action]>>;
 
-    get api(): { [Action in keyof APIs as SnakeToCamel<Action>]:
-        (params: APIs[Action][0]) => Promise<APIs[Action][1]> } {
+    get api(): { [Action in keyof APIs as SnakeToCamel<Action>]: APIs[Action] } {
         return new Proxy({}, {
             get: (_, action, __) => (params: any) => this.call(camelToSnake(action.toString()) as any, params)
         }) as any;

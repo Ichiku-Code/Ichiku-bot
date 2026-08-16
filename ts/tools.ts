@@ -8,36 +8,31 @@ import { env } from './env.js';
 import * as logging from './logging.js';
 import type { Session } from './session.js';
 
-const tools = new Map<string, {
-    description: string, schema: ZodType, process: (args: any, session: Session) => any | Promise<any>
-}>();
+type Tool<Schema extends ZodType> = [description: string | string[], schema: Schema,
+    process: (args: output<Schema>, session: Session) => any | Promise<any>];
 
-export function all() {
-    return tools.entries().map(([name, { description, schema }]) =>
-        zodFunction({ name, description, parameters: schema })).toArray();
-}
+const tools = new Map<string, Tool<any>>();
 
-function register<T extends ZodType>(name: string, description: string, schema: T,
-    process: (args: output<T>, session: Session) => any | Promise<any>) {
-    tools.set(name, { description, schema, process });
-}
+export const all = () => tools.entries().map(([name, [description, schema]]) => zodFunction({
+    name,
+    description: typeof description === 'string' ? description : description.join('\n'),
+    parameters: schema
+})).toArray();
+
+const register = <T extends ZodType>(name: string, ...tool: Tool<T>) => tools.set(name, tool);
 
 export async function call(name: string, raw: string, session: Session) {
     try {
         const tool = tools.get(name);
         if (tool === undefined) throw new Error(`No such tool: ${name}`);
-        const args = tool.schema.parse(JSON.parse(raw));
+        const [_, schema, process] = tool;
+        const args = schema.parse(JSON.parse(raw));
         await logging.notify(`正在使用${name}工具……`);
-        const result = await tool.process(args, session);
+        const result = await process(args, session);
         return { args, result };
     } catch (e) {
         return { error: e };
     }
-}
-
-function raw(strings: readonly string[], ...values: any[]) {
-    const raw = strings.reduce((acc, str, i) => acc + values[i - 1] + str);
-    return raw.replace(/^[ \t]+/gm, '').trim();
 }
 
 register(
@@ -51,13 +46,15 @@ const tvly = tavily({ apiKey: env.tavily.key, apiBaseURL: env.tavily.url });
 
 register(
     'web_search',
-    raw`网络搜索。
-    在调用搜索工具前，必须将用户的自然语言问题转化为适合搜索引擎的关键字：
-    - 去除噪音：丢弃所有疑问词（如“什么是”、“如何”、“为什么”）、停用词（如“的”、“了”）和修饰词。
-    - 提取核心：识别核心实体（Entity）、技术名词、特定概念。
-    - 补充上下文：如果实体比较宽泛，添加分类词（如将 'Tavily' 补充为 'Tavily AI search API'）。
-    - 语言适配：若用户询问技术/专有名词，优先生成英文关键词或中英混合关键词。
-    - 时间具体化：将相对时间改为绝对时间点（如“最近”“近期”改为“2026.8”）。`,
+    [
+        '网络搜索。',
+        '在调用搜索工具前，必须将用户的自然语言问题转化为适合搜索引擎的关键字：',
+        '- 去除噪音：丢弃所有疑问词（如“什么是”、“如何”、“为什么”）、停用词（如“的”、“了”）和修饰词。',
+        '- 提取核心：识别核心实体（Entity）、技术名词、特定概念。',
+        '- 补充上下文：如果实体比较宽泛，添加分类词（如将 `Tavily` 补充为 `Tavily AI search API`）。',
+        '- 语言适配：若用户询问技术/专有名词，优先生成英文关键词或中英混合关键词。',
+        '- 时间具体化：将相对时间改为绝对时间点（如“最近”“近期”改为“2026.8”）。'
+    ],
     z.object({ query: z.string().describe('搜索关键词') }),
     async ({ query }) => await tvly.search(query, { searchDepth: 'ultra-fast' })
 );
@@ -66,17 +63,19 @@ const parser = new Parser({ allowMemberAccess: false });
 
 register(
     'simple_eval',
-    raw`使用expr-eval安全评估简单算术表达式。
-    支持：
-    - 数字及列表字面量
-    - 算术运算符：+, -, *, /, %, ^
-    - 比较与逻辑：==, !=, <, <=, >, >=, in
-    - 逻辑运算符：and / &&, or / ||, not / !
-    - 三元条件表达式：cond ? left : right
-    - 变量及多语句：x = 1; x * 2
-    - 箭头函数：(x, y) -> x + y
-    - 内置高阶函数：map, filter, fold
-    - 特殊函数、常量：pow, sqrt, random, abs, min, max, pi, e等`,
+    [
+        '使用expr-eval安全评估简单算术表达式。',
+        '支持：',
+        '- 数字及列表字面量',
+        '- 算术运算符：+, -, *, /, %, ^',
+        '- 比较与逻辑：==, !=, <, <=, >, >=, in',
+        '- 逻辑运算符：and / &&, or / ||, not / !',
+        '- 三元条件表达式：cond ? left : right',
+        '- 变量及多语句：x = 1; x * 2',
+        '- 箭头函数：(x, y) -> x + y',
+        '- 内置高阶函数：map, filter, fold',
+        '- 特殊函数、常量：pow, sqrt, random, abs, min, max, pi, e等'
+    ],
     z.object({ expr: z.string().describe('表达式') }),
     ({ expr }) => parser.evaluate(expr)
 );
