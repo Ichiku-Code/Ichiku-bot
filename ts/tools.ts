@@ -82,14 +82,16 @@ register(
 
 register(
     'ban',
-    '设置指定用户的禁言时长。会覆盖当前的禁言状态，禁言时长为 0 则相当于解除禁言。',
+    '设置指定用户的禁言时长，在用户处于禁言状态中时无效，但若禁言时长为0则进行解禁。',
     z.object({
         user_id: z.int().describe('要禁言的用户id'),
-        duration: z.int().min(0).max(15).describe('禁言时长（单位为分钟，范围为0~15）')
+        duration: z.int().min(1).max(15).describe('禁言时长（单位为分钟，范围为1~15）')
     }),
     async ({ user_id, duration }, session) => {
+        if (duration && (await session.server.api.getGroupShutList({ group_id: session.group }))
+            .some(item => item.user_id === user_id)) return 'already banned';
         await session.server.api.setGroupBan({ group_id: session.group, user_id, duration: duration * 60 });
-        return 'succeed';
+        return duration ? 'ban succeed' : 'ban lifted';
     }
 );
 

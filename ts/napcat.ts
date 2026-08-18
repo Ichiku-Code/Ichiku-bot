@@ -14,6 +14,14 @@ declare module './lib/apis.js' {
             user_id: number;
             target_id?: number;
         }): void;
+
+        get_group_shut_list(params: {
+            group_id: number;
+        }): {
+            user_id: number;
+            nickname: string;
+            shut_up_time: number;
+        }[];
     }
 }
 

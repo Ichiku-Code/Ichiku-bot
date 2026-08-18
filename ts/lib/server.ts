@@ -44,7 +44,8 @@ export abstract class Server {
     protected abstract call<Action extends keyof APIs>(action: Action,
         params: Parameters<APIs[Action]>[0]): Promise<ReturnType<APIs[Action]>>;
 
-    get api(): { [Action in keyof APIs as SnakeToCamel<Action>]: APIs[Action] } {
+    get api(): { [Action in keyof APIs as SnakeToCamel<Action>]: 
+        (..._: Parameters<APIs[Action]>) => Promise<ReturnType<APIs[Action]>> } {
         return new Proxy({}, {
             get: (_, action, __) => (params: any) => this.call(camelToSnake(action.toString()) as any, params)
         }) as any;
