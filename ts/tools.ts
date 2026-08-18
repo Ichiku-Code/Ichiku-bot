@@ -5,7 +5,6 @@ import type { output, ZodType } from 'zod';
 import { z } from 'zod';
 
 import { env } from './env.js';
-import * as logging from './logging.js';
 import type { Session } from './session.js';
 
 type Tool<Schema extends ZodType> = [description: string | string[], schema: Schema,
@@ -27,7 +26,7 @@ export async function call(name: string, raw: string, session: Session) {
         if (tool === undefined) throw new Error(`No such tool: ${name}`);
         const [_, schema, process] = tool;
         const args = schema.parse(JSON.parse(raw));
-        await logging.notify(`正在使用${name}工具……`);
+        await session.notify(`正在使用${name}工具……`);
         const result = await process(args, session);
         return { args, result };
     } catch (e) {

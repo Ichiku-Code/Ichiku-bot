@@ -1,19 +1,15 @@
 import { env } from './env.js';
 import { Server } from './lib/server.js';
-import * as logging from './logging.js';
+import { notify, setNotify } from './notify.js';
 import { Session } from './session.js';
 
 const server = await Server.of(env.onebot);
 
-logging.setLogger(
-    // eslint-disable-next-line no-console
-    message => console.log(`[Ichiku] ${message}`),
-    async message => void await server.api.sendGroupMsg({ group_id: env.qq.notice, message })
-);
+setNotify(async message => void await server.api.sendGroupMsg({ group_id: env.qq.notice, message }));
 
-await logging.notify('Ichiku启动喵~');
+await notify('启动喵~');
 
-server.onClose(async () => await logging.notify('Ichiku关机喵~'));
+server.onClose(async () => await notify('关机喵~'));
 
 server.handles('message/group', async event => {
     const session = new Session(event, server);
@@ -22,6 +18,6 @@ server.handles('message/group', async event => {
     } catch (e) {
         // eslint-disable-next-line no-console
         console.error(e);
-        await logging.notify(`出错了喵！错误信息：${(e as Error | undefined)?.message ?? 'unknown error'}`);
+        await session.notify(`出错了喵！错误信息：${(e as Error | undefined)?.message ?? 'unknown error'}`);
     }
 });

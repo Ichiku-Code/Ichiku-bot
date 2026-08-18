@@ -3,8 +3,8 @@ import { Formatter } from './formatter.js';
 import type { GroupMessageEvent } from './lib/events.js';
 import { unescape } from './lib/message.js';
 import type { Server } from './lib/server.js';
-import * as logging from './logging.js';
 import { Memory, request } from './model.js';
+import { notify } from './notify.js';
 import * as tools from './tools.js';
 
 const memory = await Memory.from('memory.json', 'system.txt');
@@ -49,7 +49,7 @@ export class Session {
 
     async reply() {
         if (!this.isToMe) return;
-        await logging.notify(`正在回复${await this.usernameOf(this.user)}的信息~`);
+        await this.notify(`正在回复${await this.usernameOf(this.user)}的信息~`);
         const start = performance.now();
         memory.add({ role: 'user', content: await Array.fromAsync(this.content()) });
         for (let i = 0; i < 5; i++) {
@@ -72,12 +72,12 @@ export class Session {
                     if (message.length) await this.server.api.sendGroupMsg({ group_id: this.group, message });
                 }
                 const end = performance.now();
-                await logging.notify(`回复完成！花费了${Math.floor((end - start) / 1000)}s喵~`);
+                await this.notify(`回复完成！花费了${Math.floor((end - start) / 1000)}s喵~`);
                 await memory.compress();
                 await memory.save();
                 return;
             }
-            await logging.notify('进行了一次Tool Call喵~');
+            await this.notify('进行了一次Tool Call喵~');
             for (const tool of tool_calls) {
                 if (tool.type !== 'function') throw new Error('Custom tool call is not supported');
                 const result = await tools.call(tool.function.name, tool.function.arguments, this);
@@ -89,5 +89,9 @@ export class Session {
             }
         }
         throw new Error('Too many tool calls');
+    }
+
+    async notify(message: string) {
+        await notify(message, 'Ichiku');
     }
 }

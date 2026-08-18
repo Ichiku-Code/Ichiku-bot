@@ -3,8 +3,8 @@ import OpenAI, { APIError, RateLimitError } from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionMessageParam } from 'openai/resources';
 
 import { env } from './env.js';
-import * as logging from './logging.js';
 import { Mutex } from './mutex.js';
+import { notify } from './notify.js';
 
 export const openai = new OpenAI({
     apiKey: env.openai.key,
@@ -20,7 +20,7 @@ export async function request(
         const response = await openai.chat.completions.create(body, options);
         const usage = response.usage;
         if (usage !== undefined)
-            await logging.notify(`输入${usage.prompt_tokens} token，输出${usage.completion_tokens} token喵~`);
+            await notify(`输入${usage.prompt_tokens} token，输出${usage.completion_tokens} token喵~`);
         return response;
     } catch (e) {
         if (e instanceof RateLimitError) throw new Error('Rate limit exceeded', { cause: e });
@@ -76,8 +76,8 @@ export class Memory {
 
         const length = this.recent.length;
         if (length <= threshold)
-            return await logging.notify(`上下文已使用${(length / threshold * 100).toFixed(2)}%~`);
-        await logging.notify('上下文压缩中~');
+            return await notify(`上下文已使用${(length / threshold * 100).toFixed(2)}%~`);
+        await notify('上下文压缩中~');
 
         const start = performance.now();
         const tools = this.recent.map(msg =>
@@ -107,6 +107,6 @@ export class Memory {
         this.recent = this.recent.slice(size);
         this.compressed = content;
         const end = performance.now();
-        await logging.notify(`上下文压缩完成！花费了${Math.floor((end - start) / 1000)}s喵~`);
+        await notify(`上下文压缩完成！花费了${Math.floor((end - start) / 1000)}s喵~`);
     }
 }
