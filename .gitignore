@@ -7,5 +7,5 @@
 # extra deps
 /NapCat
 /env.toml
-/memory.json
+/memories
 /system.txt

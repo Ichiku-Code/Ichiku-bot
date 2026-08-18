@@ -7,10 +7,15 @@ import { Memory, request } from './model.js';
 import { notify } from './notify.js';
 import * as tools from './tools.js';
 
-const memory = await Memory.from('memory.json', 'system.txt');
-
 export class Session {
-    constructor(public event: GroupMessageEvent, public server: Server) { }
+    static memories = new Map<string, Memory>();
+    private cache?: Memory;
+
+    constructor(public name: string, public event: GroupMessageEvent, public server: Server) { }
+
+    get memory() {
+        return this.cache ??= (Session.memories.get(this.name) ?? Memory.empty());
+    }
 
     get group() {
         return this.event.group_id;
@@ -41,47 +46,43 @@ export class Session {
         if (text) yield { type: 'text', text } as const;
     }
 
-    get isToMe() {
-        const message = this.event.message;
-        if (typeof message === 'string') return false;
-        return message.some(segment => segment?.type === 'at' && segment.data.qq === this.event.self_id.toString());
-    }
-
     async reply() {
-        if (!this.isToMe) return;
+        if (this.event.user_id === this.event.self_id) return;
         await this.notify(`正在回复${await this.usernameOf(this.user)}的信息~`);
         const start = performance.now();
-        memory.add({ role: 'user', content: await Array.fromAsync(this.content()) });
+        this.memory.add({ role: 'user', content: await Array.fromAsync(this.content()) });
         for (let i = 0; i < 5; i++) {
             const response = await request({
                 model: env.model.chat,
-                messages: memory.all,
+                messages: this.memory.all(this.name),
                 tools: tools.all()
             }, { timeout: 180000 });
             const message = response.choices[0]?.message;
             if (message === undefined) throw new Error('Reply is empty');
             const { tool_calls, content } = message;
-            memory.add({ role: 'assistant', content, tool_calls });
+            this.memory.add({ role: 'assistant', content, tool_calls });
             if (tool_calls === undefined || tool_calls.length === 0) {
-                memory.simplify();
+                this.memory.simplify();
                 if (content === null) throw new Error('Reply content is null');
                 const lines = content.replace('\n\n', '\n').replace('。', ' ').split('\n');
                 if (lines.length > 5) throw new Error('Too many lines');
                 for (const line of lines) {
                     const message = unescape(line.replace(/\[at:(\d+|all)]/g, '[CQ:at,qq=$1]').trim());
-                    if (message.length) await this.server.api.sendGroupMsg({ group_id: this.group, message });
+                    if (!message.length) continue;
+                    message.unshift({ type: 'reply', data: { id: String(this.event.message_id) } });
+                    await this.server.api.sendGroupMsg({ group_id: this.group, message });
                 }
                 const end = performance.now();
                 await this.notify(`回复完成！花费了${Math.floor((end - start) / 1000)}s喵~`);
-                await memory.compress();
-                await memory.save();
+                await this.memory.compress();
+                await this.memory.save();
                 return;
             }
             await this.notify('进行了一次Tool Call喵~');
             for (const tool of tool_calls) {
                 if (tool.type !== 'function') throw new Error('Custom tool call is not supported');
                 const result = await tools.call(tool.function.name, tool.function.arguments, this);
-                memory.add({
+                this.memory.add({
                     role: 'tool',
                     tool_call_id: tool.id,
                     content: JSON.stringify(result)
@@ -92,6 +93,6 @@ export class Session {
     }
 
     async notify(message: string) {
-        await notify(message, 'Ichiku');
+        await notify(message, this.name);
     }
 }

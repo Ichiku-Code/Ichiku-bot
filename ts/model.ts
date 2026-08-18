@@ -31,18 +31,22 @@ export async function request(
 
 const threshold = Number(env.model.threshold);
 
-export class Memory {
-    mutex: Mutex;
+const system = await promises.readFile('system.txt', 'utf-8');
 
-    private constructor(private memory: string, private compressed: string,
-        private recent: ChatCompletionMessageParam[], private system: string) {
-        this.mutex = new Mutex();
+export class Memory {
+    mutex = new Mutex();
+
+    private constructor(private memory: string | undefined, private compressed: string | undefined,
+        private recent: ChatCompletionMessageParam[]) { }
+
+    static empty() {
+        return new Memory(undefined, undefined, []);
     }
 
-    static async from(memory: string, system: string) {
+    static async from(memory: string) {
         const data = await promises.readFile(memory, 'utf-8');
         const { compressed, recent } = JSON.parse(data);
-        return new Memory(memory, compressed, recent, await promises.readFile(system, 'utf-8'));
+        return new Memory(memory, compressed, recent);
     }
 
     add(message: ChatCompletionMessageParam) {
@@ -57,15 +61,14 @@ export class Memory {
         }
     }
 
-    get all(): ChatCompletionMessageParam[] {
-        return [
-            { role: 'system', content: this.system },
-            { role: 'user', content: `【此前对话的背景摘要】：${this.compressed}` },
-            ...this.recent
-        ];
+    all(name: string) {
+        const result: ChatCompletionMessageParam[] = [{ role: 'system', content: system.replace('<name>', name) }];
+        if (this.compressed) result.push({ role: 'user', content: `【此前对话的背景摘要】：${this.compressed}` });
+        return result.concat(this.recent);
     }
 
     async save() {
+        if (this.memory === undefined) return;
         await promises.writeFile(this.memory, JSON.stringify(
             { compressed: this.compressed, recent: this.recent }, undefined, 2));
     }
