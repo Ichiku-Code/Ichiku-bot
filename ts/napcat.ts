@@ -18,10 +18,9 @@ declare module './lib/apis.js' {
         get_group_shut_list(params: {
             group_id: number;
         }): {
-            user_id: number;
-            nickname: string;
-            shut_up_time: number;
-        }[];
+            uin: string;
+            shutUpTime: number;
+        }[]; // Strange naming, don't know why.
     }
 }
 
